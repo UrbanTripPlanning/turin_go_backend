@@ -1,0 +1,42 @@
+# cache
+__pycache__/
+*.py[cod]
+*$py.class
+
+# env
+venv/
+.env
+*.env
+
+# ide
+.vscode/
+.idea/
+*.swp
+*.swo
+*.swn
+
+# database
+*.sqlite3
+*.db
+mongodb.log
+mysql.log
+pgdata/
+
+# log
+logs/
+*.log
+nohup.out
+
+# build
+Pipfile
+Pipfile.lock
+poetry.lock
+*.egg-info/
+dist/
+build/
+*.tar.gz
+
+# Docker
+.dockerignore
+docker-compose.override.yml
+*.container
