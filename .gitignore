@@ -40,3 +40,6 @@ build/
 .dockerignore
 docker-compose.override.yml
 *.container
+
+# data
+data/
