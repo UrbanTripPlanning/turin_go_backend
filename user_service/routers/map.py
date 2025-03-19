@@ -8,25 +8,25 @@ router = APIRouter()
 
 
 @router.get("/weather")
-async def weather():
+async def weather(timestamp: int):
     async with httpx.AsyncClient() as client:
-        resp = await client.get(f'{DATA_SERVICE_URL}/weather')
+        resp = await client.get(f'{DATA_SERVICE_URL}/weather?timestamp={timestamp}')
     return response(resp.json())
 
 
 @router.get("/info")
-async def info():
+async def info(timestamp: int):
     # map info
     # position records
     async with httpx.AsyncClient() as client:
-        resp = await client.get(f'{DATA_SERVICE_URL}/map_info')
+        resp = await client.get(f'{DATA_SERVICE_URL}/map_info?timestamp={timestamp}')
     return response(resp.json())
 
 
 @router.get("/traffic")
-async def traffic():
+async def traffic(timestamp: int):
     async with httpx.AsyncClient() as client:
-        resp = await client.get(f'{TRAFFIC_SERVICE_URL}/traffic/info')
+        resp = await client.get(f'{TRAFFIC_SERVICE_URL}/traffic/info', params={'timestamp': timestamp})
     return response(resp.json())
 
 

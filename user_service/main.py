@@ -10,7 +10,7 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 app.middleware("http")(handle_wrapper_middleware)
 # register
 app.include_router(route.router, prefix="/route", tags=["Route"])
-app.include_router(common.router, prefix="/", tags=["Common"])
+app.include_router(common.router, prefix="", tags=["Common"])
 app.include_router(map.router, prefix="/map", tags=["Map"])
 
 
