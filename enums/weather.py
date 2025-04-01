@@ -6,3 +6,6 @@ class Weather(int, Enum):
     RAIN = 2
     CLOUDS = 3
     SNOW = 4
+
+    def name(self):
+        return self._name_.lower()
