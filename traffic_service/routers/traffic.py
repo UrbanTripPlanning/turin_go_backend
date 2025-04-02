@@ -1,6 +1,6 @@
 import time
 from fastapi import APIRouter
-from traffic_service.services import history, predict
+from traffic_service.services import traffic
 
 
 router = APIRouter()
@@ -9,6 +9,6 @@ router = APIRouter()
 @router.get("/info")
 async def info(timestamp: int):
     if timestamp <= int(time.time()):
-        return await history.traffic_data(timestamp)
+        return await traffic.history_info(timestamp)
     else:
-        return await predict.traffic_data(timestamp)
+        return await traffic.predict_info(timestamp)

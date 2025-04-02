@@ -1,7 +1,9 @@
 from pydantic import BaseModel
+from typing import Tuple
 
 
 class SearchRouteRequest(BaseModel):
-    timestamp: int
-    start: str
-    end: str
+    start_at: int  # timestamp
+    end_at: int  # timestamp
+    src_loc: Tuple[float, float]
+    dst_loc: Tuple[float, float]
