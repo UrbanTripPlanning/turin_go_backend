@@ -5,7 +5,7 @@ import httpx
 from utils.load import DATA_SERVICE_URL
 
 
-async def traffic_data(timestamp: int):
+async def history_info(timestamp: int):
     traffic_list = await get_traffic(timestamp)
     nodes = await get_position()
     node_geo = {}
@@ -31,3 +31,7 @@ async def get_position():
     async with httpx.AsyncClient() as client:
         resp = await client.get(f'{DATA_SERVICE_URL}/position/info')
     return resp.json()
+
+
+async def predict_info(timestamp: int):
+    return []
