@@ -20,7 +20,7 @@ class RoadNetwork:
         Initialize the RoadNetwork instance.
         """
         self.gdf: Optional[gpd.GeoDataFrame] = None
-        self.graph = json_graph.node_link_graph(graph_data)
+        self.graph = json_graph.node_link_graph(graph_data, edges="links")
         logging.info("RoadNetwork instance created. Processor initialized.")
 
     def _find_nearest_node(self, point: Tuple[float, float]) -> Tuple[float, float]:

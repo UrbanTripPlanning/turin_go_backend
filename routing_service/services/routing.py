@@ -113,7 +113,7 @@ class RoutePlanner:
         title = f"Best Path with {self.algorithm.capitalize()} - {self.transport_mode}"
         plt.title(title)
         filename = f'best_path_{self.transport_mode.mode_name.lower()}.png'
-        plt.savefig(os.path.join(os.getenv("CURRENT_OUT_PATH"), filename))
+        plt.savefig(f'./{filename}')
         logging.info(f"Graph image saved as '{filename}' in directory '{os.getenv('CURRENT_OUT_PATH')}'")
         plt.close()
 
@@ -203,17 +203,15 @@ class RoutePlanner:
 
 async def history(req: SearchRouteRequest):
     algorithm = 'A*'
+    params = {}
     if req.start_at > 0:
-        start_time = datetime.fromtimestamp(req.start_at)
-        end_time = None
+        params['start_time'] = datetime.fromtimestamp(req.start_at)
+    elif req.end_at > 0:
+        params['end_time'] = datetime.fromtimestamp(req.end_at)
     else:
-        start_time = None
-        end_time = datetime.fromtimestamp(req.end_at)
+        params['start_time'] = datetime.now()
     async with httpx.AsyncClient() as client:
-        resp = await client.get(f'{TRAFFIC_SERVICE_URL}/road/network', params={
-            'start_time': start_time,
-            'end_time': end_time
-        })
+        resp = await client.get(f'{TRAFFIC_SERVICE_URL}/road/network', params=params)
     data = resp.json()
     network = RoadNetwork(data)
     walking_planner = RoutePlanner(network, transport_mode=TransportMode.FOOT, algorithm=algorithm)
