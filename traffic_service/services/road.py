@@ -169,7 +169,7 @@ class RoadNetwork:
         logging.info("RoadNetwork instance created. Processor initialized.")
 
     def to_dict(self):
-        return json_graph.node_link_graph(self.graph)
+        return json_graph.node_link_data(self.graph)
 
     async def async_init(
             self,
