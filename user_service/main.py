@@ -1,7 +1,7 @@
 import uvicorn
 from fastapi import FastAPI
 from fastapi.security import OAuth2PasswordBearer
-from user_service.routers import common, map, route
+from user_service.routers import common, map, route, place
 from user_service.middleware import handle_wrapper_middleware
 
 
@@ -12,6 +12,7 @@ app.middleware("http")(handle_wrapper_middleware)
 app.include_router(route.router, prefix="/route", tags=["Route"])
 app.include_router(common.router, prefix="", tags=["Common"])
 app.include_router(map.router, prefix="/map", tags=["Map"])
+app.include_router(place.router, prefix="/place", tags=["Place"])
 
 
 if __name__ == '__main__':
