@@ -15,4 +15,9 @@ async def search(name: str):
     }
     place_collection = get_mongo_collection('place')
     results = await place_collection.find(query).limit(10).to_list()
-    return results
+    return [convert(item) for item in results]
+
+
+def convert(result):
+    del result['_id']
+    return result

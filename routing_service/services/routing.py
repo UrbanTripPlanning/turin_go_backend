@@ -47,7 +47,7 @@ class RoutePlanner:
             self,
             source_point: Tuple[float, float],
             target_point: Tuple[float, float]
-    ) -> Tuple[Optional[List[Tuple[float, float]]], Optional[float]]:
+    ) -> Tuple[Optional[List[Tuple[float, float]]], float, int, Optional[float]]:
         """
         Compute the route between source_point and target_point.
 
@@ -55,7 +55,7 @@ class RoutePlanner:
           - For Car: use 'car_travel_time'
           - For Foot/Bike: use 'length'
 
-        Returns the computed path (a list of nodes) and the execution time.
+        Returns the computed path (a list of nodes), total distances, total times and the execution time.
         """
         # Select cost attribute based on transport mode.
         if self.transport_mode == TransportMode.CAR:
@@ -76,10 +76,11 @@ class RoutePlanner:
         if self.algorithm.lower() == 'dijkstra':
             try:
                 path = nx.dijkstra_path(self.graph, source, target, weight=cost)
+                routes_time = nx.dijkstra_path_length(self.graph, source, target, weight=cost)
                 logging.info(f"Dijkstra route found: {path}")
             except nx.NetworkXNoPath:
                 logging.error("No route found using Dijkstra.")
-                return None, None
+                return None, 0.0, 0, None
         else:
             # Use A* algorithm by default.
             def heuristic(u: Tuple[float, float], v: Tuple[float, float]) -> float:
@@ -87,14 +88,24 @@ class RoutePlanner:
 
             try:
                 path = nx.astar_path(self.graph, source, target, heuristic=heuristic, weight=cost)
+                routes_time = nx.astar_path_length(self.graph, source, target, weight=cost)
                 logging.info(f"A* route found: {path}")
             except nx.NetworkXNoPath:
                 logging.error("No route found using A*.")
-                return None, None
+                return None, 0.0, 0, None
 
         exec_time = time.perf_counter() - start_time_compute
         logging.info(f"Route computation time: {exec_time:.6f} seconds using {self.algorithm.capitalize()}")
-        return path, exec_time
+
+        routes_distance = sum(self.graph[u][v]['length'] for u, v in zip(path[:-1], path[1:]))
+        if self.transport_mode == TransportMode.FOOT:
+            human_speed = 72  # meter/min
+            routes_time = (routes_distance / human_speed) + (1 if routes_distance > 2000 else 0)
+        else:
+            convert_rate = 60/1000  # km/h -> m/min
+            routes_time *= convert_rate
+
+        return path, routes_distance, round(routes_time), exec_time
 
     def plot_path(self, path: Optional[List[Tuple[float, float]]], path_color: str = "black") -> None:
         """
@@ -213,8 +224,21 @@ async def history(req: SearchRouteRequest):
     async with httpx.AsyncClient() as client:
         resp = await client.get(f'{TRAFFIC_SERVICE_URL}/road/network', params=params)
     data = resp.json()
+    result = {}
     network = RoadNetwork(data)
     walking_planner = RoutePlanner(network, transport_mode=TransportMode.FOOT, algorithm=algorithm)
-    walking_path, _ = walking_planner.compute(req.src_loc, req.dst_loc)
-    return walking_path
+    walking_path, walking_distance, walking_times, _ = walking_planner.compute(req.src_loc, req.dst_loc)
+    result['walking'] = {
+        'routes': walking_path,
+        'distances': walking_distance,
+        'times': walking_times
+    }
+    driving_planner = RoutePlanner(network, transport_mode=TransportMode.CAR, algorithm=algorithm)
+    driving_path, driving_distance, driving_times, _ = driving_planner.compute(req.src_loc, req.dst_loc)
+    result['driving'] = {
+        'routes': driving_path,
+        'distances': driving_distance,
+        'times': driving_times
+    }
+    return result
 
