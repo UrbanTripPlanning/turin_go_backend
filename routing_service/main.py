@@ -7,5 +7,5 @@ app = FastAPI(title="routing service")
 app.include_router(route.router, prefix="/route", tags=["Route"])
 
 
-if __name__ == '__main__':
-    uvicorn.run(app, host="0.0.0.0", port=8003, reload=True)
+# if __name__ == '__main__':
+#     uvicorn.run(app, host="0.0.0.0", port=8003, reload=True)
