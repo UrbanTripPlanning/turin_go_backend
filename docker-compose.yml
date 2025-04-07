@@ -1,0 +1,28 @@
+version: '3.8'
+
+services:
+  user_service:
+    build: .
+    container_name: user_service
+    command: uvicorn user_service.main:app --host 0.0.0.0 --port 8001
+    ports:
+      - "8001:8001"
+    depends_on:
+      - routing_service
+      - traffic_service
+      - data_service
+
+  traffic_service:
+    build: .
+    container_name: traffic_service
+    command: uvicorn traffic_service.main:app --host 0.0.0.0 --port 8002
+
+  routing_service:
+    build: .
+    container_name: routing_service
+    command: uvicorn routing_service.main:app --host 0.0.0.0 --port 8003
+
+  data_service:
+    build: .
+    container_name: data_service
+    command: uvicorn data_service.main:app --host 0.0.0.0 --port 8004
