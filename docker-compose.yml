@@ -11,18 +11,28 @@ services:
       - routing_service
       - traffic_service
       - data_service
+    environment:
+      DATA_SERVICE_URL: http://data_service:8004
+      ROUTING_SERVICE_URL: http://routing_service:8003
+      TRAFFIC_SERVICE_URL: http://traffic_service:8002
 
   traffic_service:
     build: .
     container_name: traffic_service
     command: uvicorn traffic_service.main:app --host 0.0.0.0 --port 8002
+    ports:
+      - "8002:8002"
 
   routing_service:
     build: .
     container_name: routing_service
     command: uvicorn routing_service.main:app --host 0.0.0.0 --port 8003
+    ports:
+      - "8003:8003"
 
   data_service:
     build: .
     container_name: data_service
     command: uvicorn data_service.main:app --host 0.0.0.0 --port 8004
+    ports:
+      - "8004:8004"
