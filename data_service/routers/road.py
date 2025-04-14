@@ -1,5 +1,3 @@
-import datetime
-
 from fastapi import APIRouter
 from data_service.database import get_mongo_collection
 

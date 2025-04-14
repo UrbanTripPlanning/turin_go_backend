@@ -4,8 +4,8 @@ import datetime
 from typing import List
 from fastapi import APIRouter, Depends, Query
 from user_service.schemas import response
-from utils.load import ROUTING_SERVICE_URL
-from user_service.models.api_route import SearchRouteRequest
+from utils.load import ROUTING_SERVICE_URL, DATA_SERVICE_URL
+from user_service.models.api_route import SearchRouteRequest, SaveRoutePlanRequest
 
 
 router = APIRouter()
@@ -25,10 +25,37 @@ async def get_search_request(
     )
 
 
+async def get_save_request(
+    user_id: int = 0,
+    start_at: int = 0,
+    end_at: int = 0,
+    src_loc: List[float] = Query(...),
+    dst_loc: List[float] = Query(...),
+    spend_time: int = 0,
+    time_mode: int = 0
+) -> SaveRoutePlanRequest:
+    return SaveRoutePlanRequest(
+        user_id=user_id,
+        start_at=start_at,
+        end_at=end_at,
+        src_loc=tuple(src_loc),
+        dst_loc=tuple(dst_loc),
+        spend_time=spend_time,
+        time_mode=time_mode
+    )
+
+
 @router.get("/search")
 async def search(req: SearchRouteRequest = Depends(get_search_request)):
     async with httpx.AsyncClient() as client:
         resp = await client.get(f'{ROUTING_SERVICE_URL}/route/search', params=req.dict())
+    return response(resp.json())
+
+
+@router.get("/save")
+async def save(req: SaveRoutePlanRequest = Depends(get_save_request)):
+    async with httpx.AsyncClient() as client:
+        resp = await client.get(f'{DATA_SERVICE_URL}/plan/save', params=req.dict())
     return response(resp.json())
 
 
