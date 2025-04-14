@@ -31,8 +31,11 @@ async def get_save_request(
     end_at: int = 0,
     src_loc: List[float] = Query(...),
     dst_loc: List[float] = Query(...),
+    src_name: str = '',
+    dst_name: str = '',
     spend_time: int = 0,
-    time_mode: int = 0
+    time_mode: int = 0,
+    route_mode: int = 0
 ) -> SaveRoutePlanRequest:
     return SaveRoutePlanRequest(
         user_id=user_id,
@@ -40,8 +43,11 @@ async def get_save_request(
         end_at=end_at,
         src_loc=tuple(src_loc),
         dst_loc=tuple(dst_loc),
+        src_name=src_name,
+        dst_name=dst_name,
         spend_time=spend_time,
-        time_mode=time_mode
+        time_mode=time_mode,
+        route_mode=route_mode
     )
 
 
@@ -56,6 +62,13 @@ async def search(req: SearchRouteRequest = Depends(get_search_request)):
 async def save(req: SaveRoutePlanRequest = Depends(get_save_request)):
     async with httpx.AsyncClient() as client:
         resp = await client.get(f'{DATA_SERVICE_URL}/plan/save', params=req.dict())
+    return response(resp.json())
+
+
+@router.get("/list")
+async def get_list(user_id: int):
+    async with httpx.AsyncClient() as client:
+        resp = await client.get(f'{DATA_SERVICE_URL}/plan/list', params={'user_id': user_id})
     return response(resp.json())
 
 
