@@ -18,7 +18,7 @@ app.add_middleware(
 app.middleware("http")(handle_wrapper_middleware)
 # register
 app.include_router(route.router, prefix="/route", tags=["Route"])
-app.include_router(common.router, prefix="", tags=["Common"])
+app.include_router(common.router, prefix="/common", tags=["Common"])
 app.include_router(map.router, prefix="/map", tags=["Map"])
 app.include_router(place.router, prefix="/place", tags=["Place"])
 
