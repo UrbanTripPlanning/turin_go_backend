@@ -3,7 +3,8 @@ from typing import Tuple, Optional
 
 
 class SaveRoutePlanRequest(BaseModel):
-    user_id: int
+    plan_id: Optional[str] = ''
+    user_id: str
     start_at: Optional[int] = 0
     end_at: Optional[int] = 0
     src_loc: Tuple[float, float]

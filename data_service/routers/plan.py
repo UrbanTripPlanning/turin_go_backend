@@ -1,4 +1,5 @@
 from typing import List
+from bson import ObjectId
 from fastapi import APIRouter, Depends, Query
 from data_service.database import get_mongo_collection
 from data_service.models.api_route import SaveRoutePlanRequest
@@ -8,7 +9,8 @@ router = APIRouter()
 
 
 async def get_save_request(
-    user_id: int = 0,
+    plan_id: str = '',
+    user_id: str = '',
     start_at: int = 0,
     end_at: int = 0,
     src_loc: List[float] = Query(...),
@@ -20,6 +22,7 @@ async def get_save_request(
     route_mode: int = 0
 ) -> SaveRoutePlanRequest:
     return SaveRoutePlanRequest(
+        plan_id=plan_id,
         user_id=user_id,
         start_at=start_at,
         end_at=end_at,
@@ -48,11 +51,22 @@ async def save(req: SaveRoutePlanRequest = Depends(get_save_request)):
         'time_mode': req.time_mode,
         'route_mode': req.route_mode
     }
-    _ = plan_collection.insert_one(data)
+    if req.plan_id == '':
+        # insert
+        _ = plan_collection.insert_one(data)
+    else:
+        # update
+        result = await plan_collection.find_one({'_id': ObjectId(req.plan_id)})
+        if not result:
+            return {"error": "record not found"}
+        _ = plan_collection.update_one(
+            {'_id': ObjectId(req.plan_id)},
+            {'$set': data}
+        )
 
 
 @router.get("/list")
-async def get_list(user_id: int):
+async def get_list(user_id: str):
     plan_collection = get_mongo_collection('plan')
     results = await plan_collection.find({'user_id': user_id}).to_list()
     return [convert(item) for item in results]
@@ -60,6 +74,7 @@ async def get_list(user_id: int):
 
 def convert(result):
     return {
+        'plan_id': str(result['_id']),
         'user_id': result['user_id'],
         'start_at': result['start_at'],
         'end_at': result['end_at'],
