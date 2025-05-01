@@ -66,6 +66,12 @@ async def save(req: SaveRoutePlanRequest = Depends(get_save_request)):
         )
 
 
+@router.get("/delete")
+async def delete(plan_id: str):
+    plan_collection = get_mongo_collection('plan')
+    _ = await plan_collection.delete_one({'_id': ObjectId(plan_id)})
+
+
 @router.get("/list")
 async def get_list(user_id: str):
     plan_collection = get_mongo_collection('plan')

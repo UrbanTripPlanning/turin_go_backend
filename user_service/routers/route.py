@@ -68,6 +68,13 @@ async def save(req: SaveRoutePlanRequest = Depends(get_save_request)):
     return response(resp.json())
 
 
+@router.get("/delete")
+async def delete(plan_id: str):
+    async with httpx.AsyncClient() as client:
+        resp = await client.get(f'{DATA_SERVICE_URL}/plan/delete', params={'plan_id': plan_id})
+    return response(resp.json())
+
+
 @router.get("/list")
 async def get_list(user_id: str):
     async with httpx.AsyncClient() as client:
