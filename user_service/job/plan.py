@@ -29,6 +29,8 @@ async def check_future_plans():
         if abs(new_time_duration-old_time_duration) <= 1:
             continue
         old_plan['spend_time'] = new_time_duration
+        async with httpx.AsyncClient() as client:
+            _ = await client.get(f'{DATA_SERVICE_URL}/plan/save', params=old_plan)
         old_plan['ts'] = max(int(old_plan['start_at']) + int(old_plan['spend_time'])*60, int(old_plan['end_at']))
         affected_plans.append(old_plan)
     plan_cache.set_affected_plans(affected_plans)
