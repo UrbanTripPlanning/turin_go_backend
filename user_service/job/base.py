@@ -10,4 +10,4 @@ def register_jobs(scheduler: BackgroundScheduler, loop):
                 loop.call_soon_threadsafe(asyncio.create_task, job())
         return run
 
-    scheduler.add_job(async_wrapper(plan.check_future_plans), 'interval', seconds=2 * 60)
+    scheduler.add_job(async_wrapper(plan.check_future_plans), 'interval', seconds=5 * 60)
