@@ -1,3 +1,4 @@
+import datetime
 from typing import List
 from bson import ObjectId
 from fastapi import APIRouter, Depends, Query
@@ -69,7 +70,25 @@ async def save(req: SaveRoutePlanRequest = Depends(get_save_request)):
 async def get_list(user_id: str):
     plan_collection = get_mongo_collection('plan')
     results = await plan_collection.find({'user_id': user_id}).to_list()
-    return [convert(item) for item in results]
+    return plan_filter(results)
+
+
+@router.get("/list/all")
+async def get_all_list():
+    plan_collection = get_mongo_collection('plan')
+    results = await plan_collection.find({}).to_list()
+    return plan_filter(results)
+
+
+def plan_filter(plans):
+    result = []
+    curr = int(datetime.datetime.now().timestamp())
+    for plan in plans:
+        last = max(int(plan['start_at']) + int(plan['spend_time'])*60, int(plan['end_at']))
+        if curr > last:
+            continue
+        result.append(convert(plan))
+    return result
 
 
 def convert(result):

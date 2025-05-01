@@ -5,6 +5,7 @@ from typing import List
 from fastapi import APIRouter, Depends, Query
 from user_service.schemas import response
 from utils.load import ROUTING_SERVICE_URL, DATA_SERVICE_URL
+from user_service.cache import plan as plan_cache
 from user_service.models.api_route import SearchRouteRequest, SaveRoutePlanRequest
 
 
@@ -72,6 +73,12 @@ async def get_list(user_id: str):
     async with httpx.AsyncClient() as client:
         resp = await client.get(f'{DATA_SERVICE_URL}/plan/list', params={'user_id': user_id})
     return response(resp.json())
+
+
+@router.get("/list/affected")
+async def get_affected_list(user_id: str):
+    result = plan_cache.get_affected_plans(user_id)
+    return response(result)
 
 
 async def test_logic():
