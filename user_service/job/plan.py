@@ -28,6 +28,7 @@ async def check_future_plans():
 
         if abs(new_time_duration-old_time_duration) <= 1:
             continue
+        old_plan['old_spend_time'] = old_time_duration
         old_plan['spend_time'] = new_time_duration
         async with httpx.AsyncClient() as client:
             _ = await client.get(f'{DATA_SERVICE_URL}/plan/save', params=old_plan)

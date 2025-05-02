@@ -72,6 +72,7 @@ async def save(req: SaveRoutePlanRequest = Depends(get_save_request)):
 async def delete(plan_id: str):
     async with httpx.AsyncClient() as client:
         resp = await client.get(f'{DATA_SERVICE_URL}/plan/delete', params={'plan_id': plan_id})
+    plan_cache.remove_affected_plan_if_needed(plan_id)
     return response(resp.json())
 
 

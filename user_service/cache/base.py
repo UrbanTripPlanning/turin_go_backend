@@ -27,3 +27,7 @@ def list_cache(prefix: str):
             continue
         result.append(value)
     return result
+
+
+def delete_cache(key: str):
+    del cache[key]
