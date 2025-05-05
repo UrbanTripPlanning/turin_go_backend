@@ -7,8 +7,11 @@ app = FastAPI(title="routing service")
 # register
 app.include_router(route.router, prefix="/route", tags=["Route"])
 
-# init
-get_traffic_data()
+
+@app.on_event("startup")
+async def startup_event():
+    # init
+    get_traffic_data()
 
 # if __name__ == '__main__':
 #     uvicorn.run(app, host="0.0.0.0", port=8003, reload=True)
