@@ -12,6 +12,7 @@ from utils.distance import euclidean_distance
 from typing import Tuple, Optional, List, Dict
 from routing_service.services.road import RoadNetwork
 from routing_service.models.api_route import SearchRouteRequest
+from routing_service.cache.traffic import get_traffic_data
 
 
 class TransportMode(Enum):
@@ -221,9 +222,10 @@ async def history(req: SearchRouteRequest):
         params['end_time'] = datetime.fromtimestamp(req.end_at)
     else:
         params['start_time'] = datetime.now()
-    async with httpx.AsyncClient() as client:
-        resp = await client.get(f'{TRAFFIC_SERVICE_URL}/road/network', params=params)
-    data = resp.json()
+    # async with httpx.AsyncClient() as client:
+    #     resp = await client.get(f'{TRAFFIC_SERVICE_URL}/road/network', params=params)
+    # data = resp.json()
+    data = get_traffic_data()
     result = {}
     network = RoadNetwork(data)
     walking_planner = RoutePlanner(network, transport_mode=TransportMode.FOOT, algorithm=algorithm)
