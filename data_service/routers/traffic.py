@@ -34,6 +34,26 @@ async def road_info(timestamp: int):
     return results
 
 
+@router.get("/road/info")
+async def road_info(timestamp: int):
+    traffic_collection = get_mongo_collection('traffic_final')
+    curr_dt = datetime.datetime.fromtimestamp(timestamp)
+    # date = curr_dt.strftime('%Y-%m-%d')
+    pipeline = [
+        {"$match": {
+            'hour': curr_dt.hour,
+            'week': curr_dt.weekday(),
+            'month': curr_dt.month,
+        }},
+        {"$group": {
+            "_id": "$road_id",
+            "avgSpeed": {"$avg": "speed_clear"}
+        }}
+    ]
+    results = await traffic_collection.aggregate(pipeline).to_list()
+    return results
+
+
 def convert(result):
     return {
         'road_id': result['road_id'],
