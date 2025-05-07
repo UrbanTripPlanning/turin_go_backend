@@ -1,4 +1,3 @@
-import uvicorn
 import asyncio
 from fastapi import FastAPI
 from user_service.job.base import register_jobs
@@ -37,7 +36,3 @@ async def startup_event():
 @app.on_event("shutdown")
 def shutdown_event():
     scheduler.shutdown()
-
-
-# if __name__ == '__main__':
-#     uvicorn.run(app, host="0.0.0.0", port=8001, reload=True)
