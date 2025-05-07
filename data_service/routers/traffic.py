@@ -9,36 +9,20 @@ router = APIRouter()
 
 @router.get("/info")
 async def info(timestamp: int):
-    traffic_collection = get_mongo_collection('traffic')
+    traffic_collection = get_mongo_collection('traffic_final')
     curr_dt = datetime.datetime.fromtimestamp(timestamp)
-    # date = curr_dt.strftime('%Y-%m-%d')
-    hour = curr_dt.hour
-    results = await traffic_collection.find({'hour': hour}).to_list()
+    results = await traffic_collection.find({
+        'hour': curr_dt.hour,
+        'week': curr_dt.weekday(),
+        'month': curr_dt.month,
+    }).to_list()
     return [convert(item) for item in results]
-
-
-@router.get("/road/info")
-async def road_info(timestamp: int):
-    traffic_collection = get_mongo_collection('traffic')
-    curr_dt = datetime.datetime.fromtimestamp(timestamp)
-    # date = curr_dt.strftime('%Y-%m-%d')
-    hour = curr_dt.hour
-    pipeline = [
-        {"$match": {"hour": hour}},
-        {"$group": {
-            "_id": "$road_id",
-            "avgSpeed": {"$avg": "$avg_speed"}
-        }}
-    ]
-    results = await traffic_collection.aggregate(pipeline).to_list()
-    return results
 
 
 @router.get("/road/info")
 async def road_info(timestamp: int):
     traffic_collection = get_mongo_collection('traffic_final')
     curr_dt = datetime.datetime.fromtimestamp(timestamp)
-    # date = curr_dt.strftime('%Y-%m-%d')
     pipeline = [
         {"$match": {
             'hour': curr_dt.hour,
@@ -47,7 +31,8 @@ async def road_info(timestamp: int):
         }},
         {"$group": {
             "_id": "$road_id",
-            "avgSpeed": {"$avg": "speed_clear"}
+            "avg_speed_clear": {"$avg": "$speed_clear"},
+            "avg_speed_rain": {"$avg": "$speed_rain"}
         }}
     ]
     results = await traffic_collection.aggregate(pipeline).to_list()
@@ -60,5 +45,6 @@ def convert(result):
         'head': result['head'],
         'tail': result['tail'],
         'hour': result['hour'],
-        'speed': result['avg_speed'],
+        'speed_clear': result['speed_clear'],
+        'speed_rain': result['speed_rain'],
     }

@@ -32,12 +32,8 @@ class RoadDataProcessor:
         logging.info(f"Loaded {len(self.road_data)} road documents.")
         self.weather_data = await self.process_weather_data(start_time, end_time)
         logging.info(f"Loaded weather data.")
-        if self.weather_data['rain'] == 0:
-            self.traffic_data = await self._query_traffic_data(start_time, end_time)
-            logging.info(f"Loaded {len(self.traffic_data)} traffic documents.")
-        else:  # todo: query to other 5t traffic data
-            self.traffic_data = await self._query_traffic_data(start_time, end_time)
-            logging.info(f"Loaded {len(self.traffic_data)} traffic documents.")
+        self.traffic_data = await self._query_traffic_data(start_time, end_time)
+        logging.info(f"Loaded {len(self.traffic_data)} traffic documents.")
 
     @staticmethod
     async def _query_road_data():
@@ -142,6 +138,7 @@ class RoadDataProcessor:
             logging.warning("Common key 'road_id' not found in road data; merge skipped.")
 
         if not weather_df.empty:
+            road_gdf['is_rain'] = weather_df['rain']
             road_gdf['weather_condition'] = weather_df['weather_condition']
         else:
             logging.warning("Empy weather data; skipping merge.")
@@ -213,7 +210,8 @@ class RoadNetwork:
                     # Use provided 'length' if available; otherwise, compute from geometry.
                     length = row.get('length', geom.length)
                     # Calculate car travel time if average speed is provided.
-                    car_avg_speed = row.get('avgSpeed', 0)
+                    is_rain = row.get('is_rain', 0) == 1
+                    car_avg_speed = row.get('avg_speed_rain' if is_rain else 'avg_speed_clear', 0)
                     car_travel_time = length / (car_avg_speed / 3.6) if car_avg_speed != 0 else 0
                     # Add weather information
                     weather_condition = row.get('weather_condition', 'empty')
