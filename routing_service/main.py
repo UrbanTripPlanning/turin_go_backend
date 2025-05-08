@@ -11,5 +11,6 @@ app.include_router(route.router, prefix="/route", tags=["Route"])
 
 @app.on_event("startup")
 async def startup_event():
+    time.sleep(5)
     # init
     await load_traffic_data()
