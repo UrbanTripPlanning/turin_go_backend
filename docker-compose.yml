@@ -26,6 +26,8 @@ services:
       - "8002:8002"
     depends_on:
       - data_service
+    environment:
+      ROUTING_SERVICE_URL: http://routing_service:8003
     networks:
       - backend
 
@@ -38,6 +40,9 @@ services:
     depends_on:
       - traffic_service
       - data_service
+    environment:
+      DATA_SERVICE_URL: http://data_service:8004
+      TRAFFIC_SERVICE_URL: http://traffic_service:8002
     networks:
       - backend
 
