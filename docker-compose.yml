@@ -29,6 +29,8 @@ services:
     command: uvicorn routing_service.main:app --host 0.0.0.0 --port 8003
     ports:
       - "8003:8003"
+    depends_on:
+      - traffic_service
 
   data_service:
     build: .
