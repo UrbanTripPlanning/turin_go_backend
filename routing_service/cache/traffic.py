@@ -21,15 +21,9 @@ def get_traffic_data():
 async def load_traffic_data():
     logging.info("load new traffic data...")
     curr = int(datetime.datetime.now().timestamp())
-    for _ in range(2):
-        try:
-            async with httpx.AsyncClient() as client:
-                resp = await client.get(f'{TRAFFIC_SERVICE_URL}/road/network', params={'timestamp': 1})
-                data = resp.json()
-        except httpx.ConnectError as e:
-            print(f"Connection failed: {e}, retrying...")
-            await asyncio.sleep(2)
-
+    async with httpx.AsyncClient() as client:
+        resp = await client.get(f'{TRAFFIC_SERVICE_URL}/road/network', params={'timestamp': 1})
+    data = resp.json()
     cache['data'] = data
     cache['expired_at'] = curr + 10*60
 
