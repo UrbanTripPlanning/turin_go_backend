@@ -40,6 +40,7 @@ async def get_weather(timestamp: int):
     df = pd.DataFrame(resp.json())
     df.set_index('datetime', inplace=True)
     df.index = pd.to_datetime(df.index)
+    df.sort_index(inplace=True)
     dt = datetime.datetime.fromtimestamp(timestamp)
     pos = df.index.get_indexer([dt], method='nearest')[0]
     closest_row = df.iloc[pos]
