@@ -36,6 +36,7 @@ class EdgeWeightPredictor:
             bottleneck_ch=bottleneck_dim
         ).to(self.device)
         model_path = os.path.join(os.path.dirname(__file__), 'models', model_name)
+        print("Model path:", model_path)
         state = torch.load(model_path, map_location=self.device)
         self.model.load_state_dict(state)
         self.model.eval()

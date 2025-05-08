@@ -171,12 +171,14 @@ class RoadNetwork:
         self.processor = RoadDataProcessor()
         self.predictor: Optional[EdgeWeightPredictor] = None
 
+        print(f"[RoadNetwork] Initializing with model = {gnn_model}")
         if self.gnn_model:
             self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
             self.predictor = EdgeWeightPredictor(model_name="edge_autoencoder.pt", device=self.device)
             logging.info(f"{self.gnn_model} model and scalers loaded.")
 
         logging.info("RoadNetwork instance created. Processor initialized.")
+        print("[RoadNetwork] Model loaded.")
 
     def to_dict(self):
         return json_graph.node_link_data(self.graph, edges="links")
