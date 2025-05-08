@@ -31,6 +31,8 @@ services:
       - "8003:8003"
     depends_on:
       - traffic_service
+    environment:
+      TRAFFIC_SERVICE_URL: http://traffic_service:8002
 
   data_service:
     build: .
