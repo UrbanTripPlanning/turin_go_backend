@@ -1,15 +1,13 @@
 import os
 import time
 import json
-import httpx
 import logging
 import networkx as nx
 import matplotlib.pyplot as plt
 from enum import Enum
 from datetime import datetime, timedelta
-from utils.load import TRAFFIC_SERVICE_URL
 from utils.distance import euclidean_distance
-from typing import Tuple, Optional, List, Dict
+from typing import Tuple, Optional, List, Dict, Any
 from routing_service.services.road import RoadNetwork
 from routing_service.models.api_route import SearchRouteRequest
 from routing_service.cache.traffic import get_traffic_data
@@ -29,20 +27,77 @@ class TransportMode(Enum):
 
 
 class RoutePlanner:
-    def __init__(self, network: RoadNetwork, transport_mode: TransportMode = TransportMode.FOOT, algorithm: str = 'A*'):
+    def __init__(
+            self,
+            network: RoadNetwork,
+            transport_mode: TransportMode = TransportMode.FOOT,
+            algorithm: str = 'A*',
+            use_gnn: bool = False
+    ) -> None:
         """
         Initialize the RoutePlanner.
 
         :param network: Instance of RoadNetwork.
         :param transport_mode: Transport mode (TransportMode Enum).
         :param algorithm: Algorithm to use ('A*' or 'Dijkstra').
+        :param use_gnn: Whether to use GNN-predicted edge weights (for cars).
         """
         self.network = network
         self.graph = network.graph
         self.transport_mode = transport_mode
         self.algorithm = algorithm
+        self.use_gnn = use_gnn
         logging.info(
             f"Initialized RoutePlanner with transport_mode: {self.transport_mode.mode_name}, algorithm: {self.algorithm}")
+
+    def _select_cost_attribute(self) -> str:
+        """
+        Determine which edge attribute to use as pathfinding cost.
+        """
+        if self.transport_mode == TransportMode.CAR:
+            return "weight" if self.use_gnn else "time"
+        return "length"
+
+    def _run_path_algorithm(
+        self,
+        source: Tuple[float, float],
+        target: Tuple[float, float],
+        cost_attr: str
+    ) -> List[Tuple[float, float]]:
+        """
+        Run shortest path algorithm (Dijkstra or A*) on the road graph.
+        """
+        if self.algorithm.lower() == "dijkstra":
+            return nx.dijkstra_path(self.graph, source, target, weight=cost_attr)
+        return nx.astar_path(
+            self.graph, source, target,
+            heuristic=euclidean_distance,
+            weight=cost_attr
+        )
+
+    def _draw_network(
+        self,
+        ax: Any,
+        path_edges: Optional[List[Tuple[Tuple[float, float], Tuple[float, float]]]] = None,
+        path_nodes: Optional[List[Tuple[float, float]]] = None,
+        path_color: str = "black"
+    ) -> None:
+        """
+        Draw the road network and optional computed path.
+        """
+        pos = {node: node for node in self.graph.nodes()}
+        nx.draw_networkx_edges(self.graph, pos, ax=ax, edge_color="lightgray", width=1)
+        nx.draw_networkx_nodes(self.graph, pos, ax=ax, node_size=5, node_color="lightgray")
+
+        if path_edges and path_nodes:
+            nx.draw_networkx_edges(
+                self.graph, pos, edgelist=path_edges, ax=ax,
+                edge_color=path_color, width=3
+            )
+            nx.draw_networkx_nodes(
+                self.graph, pos, nodelist=path_nodes, ax=ax,
+                node_color=path_color, node_size=20
+            )
 
     def compute(
             self,
@@ -58,13 +113,10 @@ class RoutePlanner:
 
         Returns the computed path (a list of nodes), total distances, total times and the execution time.
         """
-        # Select cost attribute based on transport mode.
-        if self.transport_mode == TransportMode.CAR:
-            cost = 'car_travel_time'
-            logging.info("Using cost attribute 'car_travel_time' for Car mode.")
-        else:
-            cost = 'length'
-            logging.info("Using cost attribute 'length' for Foot/Bike mode.")
+        if self.graph is None:
+            raise RuntimeError("Road graph is not initialized.")
+
+        cost_attr = self._select_cost_attribute()
 
         # Ensure the source and target nodes exist; if not, use the nearest node.
         source = self.network.ensure_node(source_point)
@@ -76,8 +128,8 @@ class RoutePlanner:
         # Compute the route using the selected algorithm.
         if self.algorithm.lower() == 'dijkstra':
             try:
-                path = nx.dijkstra_path(self.graph, source, target, weight=cost)
-                routes_time = nx.dijkstra_path_length(self.graph, source, target, weight=cost)
+                path = nx.dijkstra_path(self.graph, source, target, weight=cost_attr)
+                routes_time = nx.dijkstra_path_length(self.graph, source, target, weight=cost_attr)
                 logging.info(f"Dijkstra route found: {path}")
             except nx.NetworkXNoPath:
                 logging.error("No route found using Dijkstra.")
@@ -88,8 +140,8 @@ class RoutePlanner:
                 return euclidean_distance(u, v)
 
             try:
-                path = nx.astar_path(self.graph, source, target, heuristic=heuristic, weight=cost)
-                routes_time = nx.astar_path_length(self.graph, source, target, weight=cost)
+                path = nx.astar_path(self.graph, source, target, heuristic=heuristic, weight=cost_attr)
+                routes_time = nx.astar_path_length(self.graph, source, target, weight=cost_attr)
                 logging.info(f"A* route found: {path}")
             except nx.NetworkXNoPath:
                 logging.error("No route found using A*.")
@@ -222,9 +274,6 @@ async def history(req: SearchRouteRequest):
         params['end_time'] = datetime.fromtimestamp(req.end_at)
     else:
         params['start_time'] = datetime.now()
-    # async with httpx.AsyncClient() as client:
-    #     resp = await client.get(f'{TRAFFIC_SERVICE_URL}/road/network', params=params)
-    # data = resp.json()
     data = get_traffic_data()
     result = {}
     network = RoadNetwork(data)

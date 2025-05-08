@@ -50,6 +50,8 @@ class RoadNetwork:
         :param point: Tuple (x, y) representing the point.
         :return: A node (x, y) present in the graph.
         """
+        if self.graph is None:
+            raise RuntimeError("Graph not initialized.")
         if point not in self.graph.nodes():
             nearest = self._find_nearest_node(point)
             logging.info(f"Point {point} not found among nodes. Using nearest node: {nearest}")
