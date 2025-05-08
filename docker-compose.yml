@@ -27,7 +27,7 @@ services:
     depends_on:
       - data_service
     environment:
-      ROUTING_SERVICE_URL: http://routing_service:8003
+      DATA_SERVICE_URL: http://data_service:8004
     networks:
       - backend
 
