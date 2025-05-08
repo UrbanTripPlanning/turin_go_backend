@@ -21,8 +21,8 @@ def get_traffic_data():
 async def load_traffic_data():
     logging.info("load new traffic data...")
     curr = int(datetime.datetime.now().timestamp())
-    async with httpx.AsyncClient() as client:
-        resp = await client.get(f'{TRAFFIC_SERVICE_URL}/road/network', params={'timestamp': 1})
+    async with httpx.AsyncClient(timeout=15.0) as client:
+        resp = await client.get(f'{TRAFFIC_SERVICE_URL}/road/network')
     data = resp.json()
     cache['data'] = data
     cache['expired_at'] = curr + 10*60
