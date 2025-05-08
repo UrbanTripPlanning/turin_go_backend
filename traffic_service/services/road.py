@@ -63,8 +63,7 @@ class RoadDataProcessor:
             timestamp = int(end_time.timestamp())
         else:
             timestamp = int(datetime.now().timestamp())
-
-        async with httpx.AsyncClient() as client:
+        async with httpx.AsyncClient(timeout=10.0) as client:
             resp = await client.get(f'{DATA_SERVICE_URL}/traffic/road/info', params={'timestamp': timestamp})
         documents = resp.json()
         logging.info(f"Queried traffic data: {len(documents)} documents found.")
