@@ -22,6 +22,10 @@ services:
     command: uvicorn traffic_service.main:app --host 0.0.0.0 --port 8002
     ports:
       - "8002:8002"
+    depends_on:
+      - data_service
+    environment:
+      DATA_SERVICE_URL: http://data_service:8004
 
   routing_service:
     build: .
@@ -29,6 +33,12 @@ services:
     command: uvicorn routing_service.main:app --host 0.0.0.0 --port 8003
     ports:
       - "8003:8003"
+    depends_on:
+      - traffic_service
+      - data_service
+    environment:
+      DATA_SERVICE_URL: http://data_service:8004
+      TRAFFIC_SERVICE_URL: http://traffic_service:8002
 
   data_service:
     build: .
