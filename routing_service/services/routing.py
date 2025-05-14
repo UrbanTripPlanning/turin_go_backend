@@ -137,9 +137,8 @@ class RoutePlanner:
             edge = G.get_edge_data(u, v, {}) or {}
             seg_len = edge.get("length", 0.0)
             if self.transport_mode == TransportMode.CAR:
-                convert_rate = 60 / 1000  # km/h -> m/min
-                routes_time *= convert_rate
-                seg_time = edge.get("time", 0.0)
+                convert_rate = 1 / 60  # m/s -> m/min
+                seg_time = edge.get("time", 0.0)*convert_rate
             else:
                 speed = self.transport_mode.default_speed or 1.0
                 seg_time = seg_len / speed
@@ -159,7 +158,7 @@ async def history(req: SearchRouteRequest):
         params['end_time'] = datetime.fromtimestamp(req.end_at)
     else:
         params['start_time'] = datetime.now()
-    data = await get_traffic_data()
+    data = get_traffic_data()
     result = {}
     network = RoadNetwork(data)
     walking_planner = RoutePlanner(network, transport_mode=TransportMode.FOOT, algorithm=algorithm)
