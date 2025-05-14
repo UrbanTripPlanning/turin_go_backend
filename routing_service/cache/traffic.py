@@ -19,12 +19,19 @@ def get_traffic_data():
 
 
 async def load_traffic_data():
-    print("load new traffic data...")
     curr = int(datetime.datetime.now().timestamp())
-    async with httpx.AsyncClient(timeout=30.0) as client:
-        resp = await client.get(f'{TRAFFIC_SERVICE_URL}/road/network')
-    data = resp.json()
-    cache['data'] = data
-    cache['expired_at'] = curr + 10*60
-
-
+    try:
+        async with httpx.AsyncClient(timeout=30.0) as client:
+            resp = await client.get(f'{TRAFFIC_SERVICE_URL}/road/network')
+        resp.raise_for_status()
+        data = resp.json()
+        cache['data'] = data
+        cache['expired_at'] = curr + 10*60
+    except httpx.HTTPStatusError as e:
+        print(f'call traffic service api fail: error code: {e.response.status_code}')
+    except httpx.ReadTimeout:
+        print(f'traffic service api read timeout')
+    except httpx.RequestError as e:
+        print(f'call traffic service api request error: {str(e)}')
+    except Exception as e:
+        print(f'call traffic service api fail: {e}')
