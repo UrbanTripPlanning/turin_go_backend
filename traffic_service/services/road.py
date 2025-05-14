@@ -239,13 +239,10 @@ class RoadNetwork:
                 is_rain = row.get('is_rain', 0) == 1
                 car_avg_speed = row.get('avg_speed_rain' if is_rain else 'avg_speed_clear', 0)
                 car_travel_time = length / (car_avg_speed / 3.6) if car_avg_speed != 0 else 0
-                # Add weather information
-                # weather_condition = row.get('weather_condition', 'empty')
                 self.graph.add_edge(
                     tail_id,
                     head_id,
                     road_id=road_id,
-                    geometry=geom,
                     speed=car_avg_speed,
                     length=length,
                     time=car_travel_time,

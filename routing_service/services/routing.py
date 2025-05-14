@@ -70,9 +70,9 @@ class RoutePlanner:
             return nx.dijkstra_path(G, source, target, weight=cost_attr)
 
         # A* with Euclidean heuristic on node positions
-        def heuristic(u: int, v: int) -> float:
-            pu = G.nodes[u]["pos"]
-            pv = G.nodes[v]["pos"]
+        def heuristic(x: int, y: int) -> float:
+            pu = tuple(G.nodes[x]["pos"])
+            pv = tuple(G.nodes[y]["pos"])
             return euclidean_distance(pu, pv)
 
         return nx.astar_path(
@@ -115,9 +115,9 @@ class RoutePlanner:
                 return None, 0.0, 0, None
         else:
             # Use A* algorithm by default.
-            def heuristic(u: int, v: int) -> float:
-                pu = G.nodes[u]["pos"]
-                pv = G.nodes[v]["pos"]
+            def heuristic(x: int, y: int) -> float:
+                pu = tuple(G.nodes[x]["pos"])
+                pv = tuple(G.nodes[y]["pos"])
                 return euclidean_distance(pu, pv)
 
             try:

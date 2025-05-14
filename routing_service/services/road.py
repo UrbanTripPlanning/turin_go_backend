@@ -33,13 +33,13 @@ class RoadNetwork:
         nearest_node = None
         min_dist = float('inf')
         for node, data in self.graph.nodes(data=True):
-            node_point = data.get('pos')
+            node_point = tuple(data.get('pos'))
             if node_point is None:
                 continue
             d = euclidean_distance(node_point, point)
             if d < min_dist:
                 min_dist = d
-                nearest = node
+                nearest_node = node
         if nearest_node is None:
             raise RuntimeError(
                 f"No graph node has a valid 'pos' attribute; "
