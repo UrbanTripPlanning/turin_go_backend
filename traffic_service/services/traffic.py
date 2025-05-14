@@ -23,19 +23,30 @@ async def history_info(timestamp: int):
 
 
 async def get_traffic(timestamp: int):
-    async with httpx.AsyncClient() as client:
-        resp = await client.get(f'{DATA_SERVICE_URL}/traffic/info', params={'timestamp': timestamp})
-    return resp.json()
+    try:
+        async with httpx.AsyncClient(timeout=15.0) as client:
+            resp = await client.get(f'{DATA_SERVICE_URL}/traffic/info', params={'timestamp': timestamp})
+            resp.raise_for_status()
+            return resp.json()
+    except httpx.HTTPStatusError as e:
+        print(f'call data service api fail: error code: {e.response.status_code}')
+    except httpx.ReadTimeout:
+        print(f'data service api read timeout')
+    except httpx.RequestError as e:
+        print(f'call data service api request error: {str(e)}')
+    except Exception as e:
+        print(f'call data service api fail: {e}')
+    return []
 
 
 async def get_position():
-    async with httpx.AsyncClient() as client:
+    async with httpx.AsyncClient(timeout=15.0) as client:
         resp = await client.get(f'{DATA_SERVICE_URL}/position/info')
     return resp.json()
 
 
 async def get_weather(timestamp: int):
-    async with httpx.AsyncClient() as client:
+    async with httpx.AsyncClient(timeout=15.0) as client:
         resp = await client.get(f'{DATA_SERVICE_URL}/weather/info')
     df = pd.DataFrame(resp.json())
     df.set_index('datetime', inplace=True)
