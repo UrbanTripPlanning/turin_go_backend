@@ -21,7 +21,7 @@ def get_traffic_data():
 async def load_traffic_data():
     print("load new traffic data...")
     curr = int(datetime.datetime.now().timestamp())
-    async with httpx.AsyncClient(timeout=15.0) as client:
+    async with httpx.AsyncClient(timeout=30.0) as client:
         resp = await client.get(f'{TRAFFIC_SERVICE_URL}/road/network')
     data = resp.json()
     cache['data'] = data

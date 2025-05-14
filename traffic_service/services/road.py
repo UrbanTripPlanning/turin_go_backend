@@ -44,7 +44,7 @@ class RoadDataProcessor:
         Query road data from the designated ROAD_COLLECTION.
         """
         logging.info("Querying road data...")
-        async with httpx.AsyncClient() as client:
+        async with httpx.AsyncClient(timeout=15.0) as client:
             resp = await client.get(f'{DATA_SERVICE_URL}/road/info')
         documents = resp.json()
         logging.info(f"Queried road data: {len(documents)} documents found.")
@@ -63,7 +63,7 @@ class RoadDataProcessor:
             timestamp = int(end_time.timestamp())
         else:
             timestamp = int(datetime.now().timestamp())
-        async with httpx.AsyncClient(timeout=10.0) as client:
+        async with httpx.AsyncClient(timeout=15.0) as client:
             resp = await client.get(f'{DATA_SERVICE_URL}/traffic/road/info', params={'timestamp': timestamp})
         documents = resp.json()
         logging.info(f"Queried traffic data: {len(documents)} documents found.")
@@ -71,7 +71,7 @@ class RoadDataProcessor:
 
     @staticmethod
     async def process_weather_data(start_time, end_time) -> pd.DataFrame:
-        async with httpx.AsyncClient() as client:
+        async with httpx.AsyncClient(timeout=15.0) as client:
             resp = await client.get(f'{DATA_SERVICE_URL}/weather/info')
         documents = resp.json()
         logging.info(f"Queried weather data: {len(documents)} documents found.")
