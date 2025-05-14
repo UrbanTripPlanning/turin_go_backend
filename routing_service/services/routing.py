@@ -157,7 +157,7 @@ async def history(req: SearchRouteRequest):
         params['end_time'] = datetime.fromtimestamp(req.end_at)
     else:
         params['start_time'] = datetime.now()
-    data = get_traffic_data()
+    data = await get_traffic_data()
     result = {}
     network = RoadNetwork(data)
     walking_planner = RoutePlanner(network, transport_mode=TransportMode.FOOT, algorithm=algorithm)

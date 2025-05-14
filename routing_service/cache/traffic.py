@@ -11,10 +11,12 @@ cache = {
 }
 
 
-def get_traffic_data():
+async def get_traffic_data():
     curr = int(datetime.datetime.now().timestamp())
     if curr + 60 > cache['expired_at']:
         asyncio.create_task(load_traffic_data())
+    if cache['data'] is None:
+        await load_traffic_data()
     return cache['data']
 
 
