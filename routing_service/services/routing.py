@@ -11,8 +11,8 @@ from routing_service.cache.traffic import get_traffic_data
 
 
 class TransportMode(Enum):
-    FOOT = ('Foot', 4.3 / 3.6)  # 5 km/h -> m/s
-    BIKE = ('Bike', 12 / 3.6)   # 15 km/h -> m/s
+    FOOT = ('Foot', 72)         # 4.32 km/h -> m/min
+    BIKE = ('Bike', 250)        # 15 km/h -> m/min
     CAR = ('Car', None)         # Use edge 'time' or 'weight'
 
     def __init__(self, mode_name: str, default_speed: Optional[float]):
@@ -137,6 +137,8 @@ class RoutePlanner:
             edge = G.get_edge_data(u, v, {}) or {}
             seg_len = edge.get("length", 0.0)
             if self.transport_mode == TransportMode.CAR:
+                convert_rate = 60 / 1000  # km/h -> m/min
+                routes_time *= convert_rate
                 seg_time = edge.get("time", 0.0)
             else:
                 speed = self.transport_mode.default_speed or 1.0
