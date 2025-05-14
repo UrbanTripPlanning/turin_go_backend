@@ -7,14 +7,11 @@ from utils.distance import euclidean_distance
 
 class RoadNetwork:
     """
-    Class to manage a road network loaded from a MongoDB collection via the asynchronous Database module.
-
-    Handles:
-      - Asynchronous initialization of the database connection.
-      - Creating a GeoDataFrame from road data.
-      - Building a NetworkX graph from road geometries.
+    Manages a directed road network:
+      - Loads traffic data via RoadDataProcessor.
+      - Optionally applies a GNN to predict or adjust edge weights.
+      - Builds a NetworkX DiGraph with road segments and travel attributes.
     """
-
     def __init__(self, graph_data) -> None:
         """
         Initialize the RoadNetwork instance.
@@ -23,38 +20,47 @@ class RoadNetwork:
         self.graph = json_graph.node_link_graph(graph_data, edges="links")
         logging.info("RoadNetwork instance created. Processor initialized.")
 
-    def _find_nearest_node(self, point: Tuple[float, float]) -> Tuple[float, float]:
+    def _find_nearest_node(self, point: Tuple[float, float]) -> int:
         """
-        Find the node in the graph closest to the given point using Euclidean distance.
+        Find the nearest graph node to a given point using Euclidean distance.
 
-        :param point: Tuple (x, y) representing the query point.
-        :return: The nearest node (x, y) in the graph.
+        :param point: Tuple (lon, lat) to search from.
+        :return: The node ID closest to the point.
         """
-        nearest: Optional[Tuple[float, float]] = None
+        if self.graph is None or not self.graph.nodes:
+            raise RuntimeError("Graph is empty. Cannot find nearest node.")
+
+        nearest_node = None
         min_dist = float('inf')
-        for node in self.graph.nodes():
-            dist = euclidean_distance(node, point)
-            if dist < min_dist:
-                min_dist = dist
+        for node, data in self.graph.nodes(data=True):
+            node_point = data.get('pos')
+            if node_point is None:
+                continue
+            d = euclidean_distance(node_point, point)
+            if d < min_dist:
+                min_dist = d
                 nearest = node
-        if nearest is None:
-            logging.error("No node found in the graph for the given point.")
-            raise ValueError("No node found in the graph.")
-        logging.debug(f"Nearest node to {point} is {nearest} with distance {min_dist}")
-        return nearest
+        if nearest_node is None:
+            raise RuntimeError(
+                f"No graph node has a valid 'pos' attribute; "
+                f"cannot snap point {point!r} to graph."
+            )
+        return nearest_node
 
-    def ensure_node(self, point: Tuple[float, float]) -> Tuple[float, float]:
+    def match_node_id(self, point: Tuple[float, float]) -> int:
         """
-        Ensure that the point is a node in the graph. If not, return the nearest node.
+        Ensure a point corresponds to a graph node. If not, snap to the nearest.
 
-        :param point: Tuple (x, y) representing the point.
-        :return: A node (x, y) present in the graph.
+        :param point: Tuple (lon, lat)
+        :return: Valid node ID in the graph.
         """
         if self.graph is None:
             raise RuntimeError("Graph not initialized.")
-        if point not in self.graph.nodes():
-            nearest = self._find_nearest_node(point)
-            logging.info(f"Point {point} not found among nodes. Using nearest node: {nearest}")
-            return nearest
-        logging.debug(f"Point {point} exists in the graph.")
-        return point
+
+        # If already exactly at a node position, return that node
+        for node, data in self.graph.nodes(data=True):
+            if data.get("pos") == point:
+                return node
+
+        # Otherwise, find and return the nearest node
+        return self._find_nearest_node(point)
