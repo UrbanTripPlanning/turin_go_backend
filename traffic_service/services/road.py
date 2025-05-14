@@ -124,9 +124,11 @@ class RoadDataProcessor:
 
     def build_network_geodataframe(self) -> Optional[gpd.GeoDataFrame]:
         """
-        Process and merge road, traffic, and weather data into a single GeoDataFrame for the network.
+        Convert raw traffic documents into a GeoDataFrame:
+          - Parses each 'geometry' dict into a Shapely geometry.
+          - Ensures the same schema when empty.
+          - Assigns a defined CRS for spatial operations.
         """
-        logging.info("Building network GeoDataFrame from road and. traffic data, and weather data.")
         road_gdf = self.process_road_data(self.road_data)
         traffic_df = self.process_traffic_data(self.traffic_data)
         weather_df = self.weather_data
@@ -151,14 +153,11 @@ class RoadDataProcessor:
 
 class RoadNetwork:
     """
-    Class to manage a road network loaded from a MongoDB collection via the asynchronous Database module.
-
-    Handles:
-      - Asynchronous initialization of the database connection.
-      - Creating a GeoDataFrame from road data.
-      - Building a NetworkX graph from road geometries.
+    Manages a directed road network:
+      - Loads traffic data via RoadDataProcessor.
+      - Optionally applies a GNN to predict or adjust edge weights.
+      - Builds a NetworkX DiGraph with road segments and travel attributes.
     """
-
     def __init__(self, gnn_model: str = '') -> None:
         """
         Initialize the RoadNetwork instance.
@@ -166,7 +165,7 @@ class RoadNetwork:
         """
         self.gnn_model = gnn_model
         self.gdf: Optional[gpd.GeoDataFrame] = None
-        self.graph: Optional[nx.Graph] = None
+        self.graph: Optional[nx.DiGraph] = None
         self.processor = RoadDataProcessor()
         self.predictor: Optional[EdgeWeightPredictor] = None
 
@@ -177,7 +176,6 @@ class RoadNetwork:
             logging.info(f"{self.gnn_model} model and scalers loaded.")
 
         logging.info("RoadNetwork instance created. Processor initialized.")
-        print("[RoadNetwork] Model loaded.")
 
     def to_dict(self):
         return json_graph.node_link_data(self.graph, edges="links")
@@ -186,10 +184,11 @@ class RoadNetwork:
             self,
             start_time: datetime = None,
             end_time: datetime = None
-    ):
+    ) -> None:
         """
-        Asynchronously initialize the database connection, load road data,
-        and build the NetworkX graph.
+        Asynchronously initialize the network:
+          1. Load traffic data via RoadDataProcessor.
+          2. Build the underlying directed graph.
         """
         logging.info("Starting asynchronous initialization of RoadNetwork.")
 
@@ -210,18 +209,30 @@ class RoadNetwork:
 
     def build_graph(self) -> None:
         """
-        Build a NetworkX graph from the GeoDataFrame.
-        Iterates through each road record and adds an edge using its geometry.
+        Construct a directed NetworkX graph from the GeoDataFrame.
+        Each DB record yields a one-way edge tail→head with its own attributes.
         """
-        self.graph = nx.Graph()
+        self.graph = nx.DiGraph()
         try:
             for index, row in self.gdf.iterrows():
-                geom = row['geometry']
+                geom = row.geometry
                 # Process only LineString geometries.
                 if geom.geom_type != 'LineString':
                     continue
-                start = tuple(geom.coords[0])
-                end = tuple(geom.coords[-1])
+
+                # Extract tail/head IDs and their coordinates
+                tail_id = int(row["tail"])
+                head_id = int(row["head"])
+                lon_tail, lat_tail = geom.coords[0]
+                lon_head, lat_head = geom.coords[-1]
+                road_id = int(row["road_id"])
+
+                # Add each node once, storing its spatial position
+                if tail_id not in self.graph:
+                    self.graph.add_node(tail_id, pos=(lon_tail, lat_tail))
+                if head_id not in self.graph:
+                    self.graph.add_node(head_id, pos=(lon_head, lat_head))
+
                 # Use provided 'length' if available; otherwise, compute from geometry.
                 length = row.get('length', geom.length)
                 # Calculate car travel time if average speed is provided.
@@ -229,18 +240,18 @@ class RoadNetwork:
                 car_avg_speed = row.get('avg_speed_rain' if is_rain else 'avg_speed_clear', 0)
                 car_travel_time = length / (car_avg_speed / 3.6) if car_avg_speed != 0 else 0
                 # Add weather information
-                weather_condition = row.get('weather_condition', 'empty')
+                # weather_condition = row.get('weather_condition', 'empty')
                 self.graph.add_edge(
-                    start,
-                    end,
-                    spped=car_avg_speed,
+                    tail_id,
+                    head_id,
+                    road_id=road_id,
+                    geometry=geom,
+                    speed=car_avg_speed,
                     length=length,
                     time=car_travel_time,
                 )
-                logging.debug(
-                    f"Edge added from {start} to {end}: length={length}, car_travel_time={car_travel_time}, "
-                    f"weather_condition={weather_condition}")
 
+            # If using GNN-based weight prediction, overwrite or augment edge weights
             if self.gnn_model and self.predictor:
                 weights = self.predictor.infer_edge_weights(self.graph)
                 self.predictor.assign_weights_to_graph(self.graph, weights)
