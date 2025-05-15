@@ -52,5 +52,5 @@ services:
     ports:
       - "8004:8004"
 
-volumes: 
+volumes:
   redis_data:
