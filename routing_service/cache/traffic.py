@@ -33,7 +33,7 @@ class TrafficGraphCache:
     def _release_lock(self, key):
         self.redis_cache.delete(f"{self.KEY_LOCK_PREFIX}{key}")
 
-    async def get_traffic_data(self, ts=None):
+    async def get_traffic_data(self, ts: int = None):
         if ts is None:
             key = self._get_latest_key()
             cache = self.local_cache

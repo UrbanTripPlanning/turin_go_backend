@@ -149,9 +149,9 @@ class RoutePlanner:
 async def history(req: SearchRouteRequest):
     algorithm = 'A*'
     if req.start_at > 0:
-        ts = datetime.fromtimestamp(req.start_at)
+        ts = req.start_at
     elif req.end_at > 0:
-        ts = datetime.fromtimestamp(req.end_at)
+        ts = req.end_at
     else:
         ts = None
     data = await traffic_graph_cache.get_traffic_data(ts)
