@@ -12,4 +12,4 @@ async def load_future_traffic():
     for offset in range(1, 7*24+1):
         time.sleep(5)
         ts = now + 60 * 60 * offset
-        traffic_graph_cache.load_traffic_data(ts)
+        await traffic_graph_cache.load_traffic_data(ts)
