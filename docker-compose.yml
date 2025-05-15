@@ -1,6 +1,15 @@
 version: '3.8'
 
 services:
+  redis:
+    image: redis:6.2
+    container_name: redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    restart: always
+
   user_service:
     build: .
     container_name: user_service
@@ -34,6 +43,7 @@ services:
     depends_on:
       - traffic_service
       - data_service
+      - redis
 
   data_service:
     build: .
