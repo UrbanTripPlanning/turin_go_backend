@@ -56,7 +56,7 @@ async def get_save_request(
 
 @router.get("/search")
 async def search(req: SearchRouteRequest = Depends(get_search_request)):
-    async with httpx.AsyncClient() as client:
+    async with httpx.AsyncClient(timeout=30.0) as client:
         resp = await client.get(f'{ROUTING_SERVICE_URL}/route/search', params=req.dict())
     return response(resp.json())
 

@@ -25,7 +25,7 @@ async def info(timestamp: int):
 
 @router.get("/traffic")
 async def traffic(timestamp: int):
-    async with httpx.AsyncClient() as client:
+    async with httpx.AsyncClient(timeout=30.0) as client:
         resp = await client.get(f'{TRAFFIC_SERVICE_URL}/traffic/info', params={'timestamp': timestamp})
     return response(resp.json())
 
