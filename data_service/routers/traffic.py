@@ -13,7 +13,7 @@ async def info(timestamp: int):
     curr_dt = datetime.datetime.fromtimestamp(timestamp)
     results = await traffic_collection.find({
         'hour': curr_dt.hour,
-        'week': curr_dt.weekday(),
+        'week': curr_dt.weekday()+1,
         'month': curr_dt.month,
     }).to_list()
     return [convert(item) for item in results]
@@ -26,7 +26,7 @@ async def road_info(timestamp: int):
     pipeline = [
         {"$match": {
             'hour': curr_dt.hour,
-            'week': curr_dt.weekday(),
+            'week': curr_dt.weekday()+1,
             'month': curr_dt.month,
         }},
         {"$group": {
