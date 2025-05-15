@@ -175,5 +175,12 @@ async def history(req: SearchRouteRequest):
         'distances': driving_distance,
         'times': driving_times
     }
+    cycling_planner = RoutePlanner(network, transport_mode=TransportMode.BIKE, algorithm=algorithm)
+    cycling_path, cycling_distance, cycling_times, _ = cycling_planner.compute(req.src_loc, req.dst_loc)
+    result['cycling'] = {
+        'routes': cycling_path,
+        'distances': cycling_distance,
+        'times': cycling_times
+    }
     return result
 
