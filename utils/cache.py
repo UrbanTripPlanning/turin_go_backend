@@ -64,10 +64,18 @@ class RedisClient:
 
     def get(self, key):
         value = self.cache.get(key)
+        if value is None:
+            return None
         return json.loads(value)
 
     def delete(self, key):
         self.cache.delete(key)
 
     def list(self, prefix):
-        return [json.loads(self.cache.get(key)) for key in self.cache.scan_iter(f'{prefix}*')]
+        result = []
+        for key in self.cache.scan_iter(f'{prefix}*'):
+            value = self.cache.get(key)
+            if value:
+                result.append(json.loads(value))
+                
+        return result
