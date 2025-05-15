@@ -77,5 +77,5 @@ class RedisClient:
             value = self.cache.get(key)
             if value:
                 result.append(json.loads(value))
-                
+
         return result

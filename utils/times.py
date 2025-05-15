@@ -10,7 +10,7 @@ def get_hour(time: datetime = None):
 
 def getInfoFromTimestamp(ts: int):
     time = timestamp2datetime(ts)
-    return time.year, time.month, time.day, time.weekday(), time.hour, time.minute
+    return time.year, time.month, time.day, time.weekday()+1, time.hour, time.minute
 
 
 def timestamp2datetime(ts):
