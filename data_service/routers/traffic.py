@@ -9,7 +9,7 @@ router = APIRouter()
 
 @router.get("/info")
 async def info(timestamp: int):
-    traffic_collection = get_mongo_collection('traffic_final')
+    traffic_collection = get_mongo_collection('traffic_road')
     curr_dt = datetime.datetime.fromtimestamp(timestamp)
     results = await traffic_collection.find({
         'hour': curr_dt.hour,
@@ -21,7 +21,7 @@ async def info(timestamp: int):
 
 @router.get("/road/info")
 async def road_info(timestamp: int):
-    traffic_collection = get_mongo_collection('traffic_final')
+    traffic_collection = get_mongo_collection('traffic_road')
     curr_dt = datetime.datetime.fromtimestamp(timestamp)
     pipeline = [
         {"$match": {
