@@ -10,6 +10,7 @@ from typing import Optional, List
 import torch
 from shapely.geometry import shape
 from utils.load import DATA_SERVICE_URL
+from utils.times import timestamp2datetime
 from networkx.readwrite import json_graph
 from traffic_service.services.nn.inference import EdgeWeightPredictor
 
@@ -26,16 +27,16 @@ class RoadDataProcessor:
         self.geo_df: Optional[gpd.GeoDataFrame] = None
         logging.info("RoadDataProcessor instance created.")
 
-    async def load_all_data(self, start_time=None, end_time=None) -> None:
+    async def load_all_data(self, timestamp=None) -> None:
         """
         Load data asynchronously from the 'road', 'weather', and 'traffic' collections.
         """
         logging.info("Starting to load all data (road, traffic, weather).")
         self.road_data = await self._query_road_data()
         logging.info(f"Loaded {len(self.road_data)} road documents.")
-        self.weather_data = await self.process_weather_data(start_time, end_time)
+        self.weather_data = await self.process_weather_data(timestamp)
         logging.info(f"Loaded weather data.")
-        self.traffic_data = await self._query_traffic_data(start_time, end_time)
+        self.traffic_data = await self._query_traffic_data(timestamp)
         logging.info(f"Loaded {len(self.traffic_data)} traffic documents.")
 
     @staticmethod
@@ -51,17 +52,13 @@ class RoadDataProcessor:
         return documents
 
     @staticmethod
-    async def _query_traffic_data(start_time=None, end_time=None):
+    async def _query_traffic_data(timestamp=None):
         """
         Query traffic data using an aggregation pipeline based on a specific hour.
-        The hour is determined from start_time, end_time, or the current time.
+        The hour is determined from timestamp, or the current time.
         """
         logging.info("Querying traffic data...")
-        if start_time is not None:
-            timestamp = int(start_time.timestamp())
-        elif end_time is not None:
-            timestamp = int(end_time.timestamp())
-        else:
+        if timestamp is None:
             timestamp = int(datetime.now().timestamp())
         async with httpx.AsyncClient(timeout=15.0) as client:
             resp = await client.get(f'{DATA_SERVICE_URL}/traffic/road/info', params={'timestamp': timestamp})
@@ -70,7 +67,7 @@ class RoadDataProcessor:
         return documents
 
     @staticmethod
-    async def process_weather_data(start_time, end_time) -> pd.DataFrame:
+    async def process_weather_data(timestamp=None) -> pd.DataFrame:
         async with httpx.AsyncClient(timeout=15.0) as client:
             resp = await client.get(f'{DATA_SERVICE_URL}/weather/info')
         documents = resp.json()
@@ -81,10 +78,8 @@ class RoadDataProcessor:
         df.index = pd.to_datetime(df.index)
         df.sort_index(inplace=True)
 
-        if start_time is not None:
-            time = start_time
-        elif end_time is not None:
-            time = end_time
+        if timestamp is not None:
+            time = timestamp2datetime(timestamp)
         else:
             time = datetime.now()
         pos = df.index.get_indexer([time], method='nearest')[0]
@@ -182,8 +177,7 @@ class RoadNetwork:
 
     async def async_init(
             self,
-            start_time: datetime = None,
-            end_time: datetime = None
+            timestamp: int = None
     ) -> None:
         """
         Asynchronously initialize the network:
@@ -193,7 +187,7 @@ class RoadNetwork:
         logging.info("Starting asynchronous initialization of RoadNetwork.")
 
         # Query and load data from all collections (only road data is available).
-        await self.processor.load_all_data(start_time, end_time)
+        await self.processor.load_all_data(timestamp)
         logging.info("Road data loaded from database.")
 
         # Process and merge the data into one GeoDataFrame (only road data used).
