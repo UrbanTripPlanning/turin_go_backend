@@ -1,5 +1,6 @@
 import datetime
 import redis
+import json
 from utils.load import REDIS_HOST
 
 
@@ -8,6 +9,7 @@ class LocalCache:
         self.cache = {}
 
     def set(self, key, value, ex=None, ts=None):
+        value = json.dumps(value)
         expire_time = None
         if ts:
             expire_time = ts
@@ -25,7 +27,7 @@ class LocalCache:
         if expire_time and now > expire_time:
             del self.cache[key]
             return None
-        return value
+        return json.loads(value)
 
     def delete(self, key):
         if key in self.cache:
@@ -40,7 +42,7 @@ class LocalCache:
             if now > expire_ts:
                 del self.cache[key]
                 continue
-            result.append(value)
+            result.append(json.loads(value))
         return result
 
 
@@ -53,6 +55,7 @@ class RedisClient:
         )
 
     def set(self, key, value, ex=None, ts=None, nx=None):
+        value = json.dumps(value)
         now = int(datetime.datetime.now().timestamp())
         if ts and ts > now:
             ex = ts - now
@@ -60,10 +63,11 @@ class RedisClient:
         return self.cache.set(key, value, ex=ex, nx=nx)
 
     def get(self, key):
-        return self.cache.get(key)
+        value = self.cache.get(key)
+        return json.loads(value)
 
     def delete(self, key):
         self.cache.delete(key)
 
     def list(self, prefix):
-        return [self.cache.get(key) for key in self.cache.scan_iter(f'{prefix}*')]
+        return [json.loads(self.cache.get(key)) for key in self.cache.scan_iter(f'{prefix}*')]
