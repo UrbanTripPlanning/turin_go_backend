@@ -2,12 +2,12 @@ import time
 import logging
 import networkx as nx
 from enum import Enum
-from datetime import datetime, timedelta
+from datetime import datetime
 from utils.distance import euclidean_distance
-from typing import Tuple, Optional, List, Dict, Any
+from typing import Tuple, Optional, List
 from routing_service.services.road import RoadNetwork
 from routing_service.models.api_route import SearchRouteRequest
-from routing_service.cache.traffic import get_traffic_data
+from routing_service.cache.traffic import traffic_graph_cache
 
 
 class TransportMode(Enum):
@@ -109,7 +109,6 @@ class RoutePlanner:
         if self.algorithm.lower() == 'dijkstra':
             try:
                 path = nx.dijkstra_path(G, source_id, target_id, weight=cost_attr)
-                # routes_time = nx.dijkstra_path_length(G, source_id, target_id, weight=cost_attr)
             except nx.NetworkXNoPath:
                 logging.error("No route found using Dijkstra.")
                 return None, 0.0, 0, None
@@ -122,7 +121,6 @@ class RoutePlanner:
 
             try:
                 path = nx.astar_path(G, source_id, target_id, heuristic=heuristic, weight=cost_attr)
-                # routes_time = nx.astar_path_length(G, source_id, target_id, weight=cost_attr)
             except nx.NetworkXNoPath:
                 logging.error("No route found using A*.")
                 return None, 0.0, 0, None
@@ -130,7 +128,6 @@ class RoutePlanner:
         exec_time = time.perf_counter() - start_time_compute
         logging.info(f"Route computation time: {exec_time:.6f} seconds using {self.algorithm.capitalize()}")
 
-        # routes_distance = sum(self.graph[u][v]['length'] for u, v in zip(path[:-1], path[1:]))
         routes_distance = 0.0
         routes_time = 0.0
         for u, v in zip(path[:-1], path[1:]):
@@ -151,14 +148,13 @@ class RoutePlanner:
 
 async def history(req: SearchRouteRequest):
     algorithm = 'A*'
-    params = {}
     if req.start_at > 0:
-        params['start_time'] = datetime.fromtimestamp(req.start_at)
+        ts = datetime.fromtimestamp(req.start_at)
     elif req.end_at > 0:
-        params['end_time'] = datetime.fromtimestamp(req.end_at)
+        ts = datetime.fromtimestamp(req.end_at)
     else:
-        params['start_time'] = datetime.now()
-    data = get_traffic_data()
+        ts = None
+    data = traffic_graph_cache.get_traffic_data(ts)
     result = {}
     network = RoadNetwork(data)
     walking_planner = RoutePlanner(network, transport_mode=TransportMode.FOOT, algorithm=algorithm)
