@@ -1,6 +1,6 @@
-import torch
-import re
 import os
+import re
+import torch
 from datetime import datetime
 from torch.utils.data import Dataset
 from torch_geometric.transforms import LineGraph
@@ -54,8 +54,8 @@ def time_based_split(dataset):
         dates.append(datetime.strptime(m.group(1), "%Y%m%d"))
     months = sorted({(d.year, d.month) for d in dates})
     assert len(months) >= 12, "Need at least one year of data!"
-    tr_m = months[:10];
-    va_m = months[10:11];
+    tr_m = months[:10]
+    va_m = months[10:11]
     te_m = months[11:12]
     tr_idx = [i for i, d in enumerate(dates) if (d.year, d.month) in tr_m]
     va_idx = [i for i, d in enumerate(dates) if (d.year, d.month) in va_m]

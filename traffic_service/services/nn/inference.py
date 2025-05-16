@@ -5,90 +5,90 @@ from torch_geometric.data import Data
 from torch_geometric.transforms import LineGraph
 from typing import List, Optional
 
-from .autoencoder import EdgeAutoEncoder
+from .autoencoder import EdgeAutoEncoderMultiTask
 
 
 class EdgeWeightPredictor:
     """
-    Given a pretrained GCN autoencoder, build the line-graph of a road network
-    and predict a scalar weight for each original edge, then assign it back.
+    Uses a pretrained multi-task GCN autoencoder to predict
+    travel-time for each edge in a NetworkX graph and assign
+    it as the 'weight' attribute.
     """
-
     def __init__(
         self,
         model_name: str,
         hidden_dims: List[int] = [64, 32],
         bottleneck_dim: int = 1,
+        dropout: float = 0.2,
         device: Optional[str] = None
     ):
-        """
-        :param model_name: name of autoencoder (.pt)
-        :param hidden_dims: encoder hidden sizes [enc1, enc2]
-        :param bottleneck_dim: size of the bottleneck embedding (should be 1)
-        :param device: 'cpu' or 'cuda'; auto‐selects if None
-        """
-        self.device = device or ('cuda' if torch.cuda.is_available() else 'cpu')
+        # Select device
+        self.device = device or ("cuda" if torch.cuda.is_available() else "cpu")
 
-        # 1) Instantiate autoencoder and load weights
-        self.model = EdgeAutoEncoder(
+        # Instantiate model and load weights
+        self.model = EdgeAutoEncoderMultiTask(
             in_ch=3,
             hidden_ch=hidden_dims,
-            bottleneck_ch=bottleneck_dim
+            bottleneck_ch=bottleneck_dim,
+            dropout=dropout
         ).to(self.device)
+
+        # Load state dict (assumes you saved model.state_dict())
         model_path = os.path.join(os.path.dirname(__file__), 'models', model_name)
         print("Model path:", model_path)
         state = torch.load(model_path, map_location=self.device)
         self.model.load_state_dict(state)
         self.model.eval()
 
-        # 2) Prepare line‐graph transform
+        # Prepare line-graph transform
         self.lg_transform = LineGraph()
 
     def _nx_to_pyg(self, graph: nx.Graph) -> Data:
         """
-        Convert a NetworkX graph with 'length','speed','time' edge attrs
-        into a PyG Data object for line‐graph construction.
+        Convert a NetworkX graph with 'length', 'speed', 'time' edge
+        attributes into a PyG Data object for line-graph construction.
         """
         nodes = list(graph.nodes())
-        idx = {n: i for i, n in enumerate(nodes)}
+        idx = {node: i for i, node in enumerate(nodes)}
 
         src, dst, attrs = [], [], []
-        for u, v, d in graph.edges(data=True):
+        for u, v, data in graph.edges(data=True):
             src.append(idx[u])
             dst.append(idx[v])
             attrs.append([
-                float(d.get('length', 0.0)),
-                float(d.get('speed', 0.0)),
-                float(d.get('time', 0.0))
+                float(data.get("length", 0.0)),
+                float(data.get("speed", 0.0)),
+                float(data.get("time", 0.0)),
             ])
 
         edge_index = torch.tensor([src, dst], dtype=torch.long)
-        edge_attr  = torch.tensor(attrs,    dtype=torch.float)
-        x = torch.zeros((len(nodes), 1),    dtype=torch.float)  # dummy node features
+        edge_attr = torch.tensor(attrs, dtype=torch.float)
+
+        # Dummy node features (not used by the encoder)
+        x = torch.zeros((len(nodes), 1), dtype=torch.float)
 
         return Data(x=x, edge_index=edge_index, edge_attr=edge_attr)
 
     def infer_edge_weights(
         self,
         graph: nx.Graph,
-        scale_min: float = 0.1,
-        scale_max: float = 0.9
+        min_weight: float = 1e-3
     ) -> List[float]:
         """
-        Predict a positive scalar weight for each edge of `graph`.
-        Returns weights in the same iteration order as graph.edges().
+        Predicts a positive travel-time for each edge in the graph.
+        Returns a list of weights in the same order as graph.edges().
         """
-        # Convert to PyG and build line‐graph
+        # Convert to PyG and build line-graph
         orig = self._nx_to_pyg(graph).to(self.device)
         L = self.lg_transform(orig)
-        # Ensure line‐graph node features = original edge attributes
-        L.x = orig.edge_attr
+        L.x = orig.edge_attr  # use edge_attr as node features on line-graph
 
         with torch.no_grad():
-            _, z = self.model(L)       # z shape: [E,1]
-            z = z.squeeze(1)           # [E]
-            w = torch.sigmoid(z)       # in (0,1)
-            w = scale_min + (scale_max - scale_min) * w
+            # Forward pass: we only need the time-prediction head
+            _, t_pred, _ = self.model(L)  # t_pred shape: [E]
+            w = t_pred.squeeze()  # shape [E]
+            # Ensure strictly positive weights
+            w = torch.clamp(w, min=min_weight)
 
         return w.cpu().tolist()
 
@@ -98,13 +98,11 @@ class EdgeWeightPredictor:
         weights: List[float]
     ) -> None:
         """
-        Efficiently assign predicted weights back to graph edges using
-        networkx.add_weighted_edges_from.
+        Assigns predicted weights back to the NetworkX graph edges
+        by setting the 'weight' attribute.
         """
-        # Build (u, v, weight) tuples in the same order as graph.edges()
-        triples = [
+        weighted_edges = [
             (u, v, float(w))
             for (u, v), w in zip(graph.edges(), weights)
         ]
-        # This will overwrite or set the 'weight' attribute on each edge
-        graph.add_weighted_edges_from(triples, weight='weight')
+        graph.add_weighted_edges_from(weighted_edges, weight="weight")
