@@ -111,7 +111,7 @@ class RoutePlanner:
                 path = nx.dijkstra_path(G, source_id, target_id, weight=cost_attr)
             except nx.NetworkXNoPath:
                 logging.error("No route found using Dijkstra.")
-                return None, 0.0, 0, None
+                return [], 0.0, 0, None
         else:
             # Use A* algorithm by default.
             def heuristic(x: int, y: int) -> float:
@@ -119,11 +119,15 @@ class RoutePlanner:
                 pv = tuple(G.nodes[y]["pos"])
                 return euclidean_distance(pu, pv)
 
+            if not nx.has_path(G, source_id, target_id):
+                logging.warning(f"No path exists between source: {source_point} and target: {target_point}.")
+                return [], 0.0, 0, None
+
             try:
                 path = nx.astar_path(G, source_id, target_id, heuristic=heuristic, weight=cost_attr)
             except nx.NetworkXNoPath:
-                logging.error("No route found using A*.")
-                return None, 0.0, 0, None
+                logging.error(f"No route found using A*, source: {source_point} and target: {target_point}.")
+                return [], 0.0, 0, None
 
         exec_time = time.perf_counter() - start_time_compute
         logging.info(f"Route computation time: {exec_time:.6f} seconds using {self.algorithm.capitalize()}")
