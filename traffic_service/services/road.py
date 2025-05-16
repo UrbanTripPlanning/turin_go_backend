@@ -156,7 +156,7 @@ class RoadNetwork:
     def __init__(self, gnn_model: str = '') -> None:
         """
         Initialize the RoadNetwork instance.
-        :param gnn_model: Model type ("GCN", "STGCN", or empty string to disable).
+        :param gnn_model: Model type ("GCN", "LSTM", or empty string to disable).
         """
         self.gnn_model = gnn_model
         self.gdf: Optional[gpd.GeoDataFrame] = None
