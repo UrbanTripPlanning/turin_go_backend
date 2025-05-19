@@ -70,13 +70,13 @@ def get_current_condition():
             return 0, Weather.CLEAR
         obs = observations[0]
         metric = obs.get("metric", {})
-        precip_total = float(metric.get("precipTotal", 0))
+        precip_rate = float(metric.get("precipRate", 0))
         temp = float(metric.get("temp", 0))
         dewpt = float(metric.get("dewpt", 0))
         humidity = float(obs.get("humidity", 0))
         solar_rad = float(obs.get("solarRadiation", 0))
 
-        if precip_total > 0.1 or (humidity >= 90 and abs(temp - dewpt) < 1 and solar_rad < 10):
+        if precip_rate > 0.0 or (humidity >= 90 and abs(temp - dewpt) < 1 and solar_rad < 10):
             return 1, Weather.RAIN
         else:
             return 0, Weather.CLEAR
@@ -168,3 +168,7 @@ async def fetch_hourly_data(threshold: int = 50):
 
 def test():
     asyncio.run(fetch_hourly_data())
+
+
+def test2():
+    get_current_condition()
