@@ -51,7 +51,7 @@ Traffic and weather data are collected on a scheduled basis and normalized befor
 
 ---
 ## 🛠️ Technology Stack
-- **Language & Framework**: Python 3.10+, FastAPI, Uvicorn
+- **Language & Framework**: Python 3.11+, FastAPI, Uvicorn
 - **Database**: MongoDB
 - **Graph Library**: NetworkX
 - **HTTP Client**: HTTPX
